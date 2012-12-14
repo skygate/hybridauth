@@ -14,15 +14,17 @@
  */
 class Hybrid_Auth 
 {
-	public static $version = "2.1.0-dev";
+	public static $version    = "2.1.0-dev";
 
-	public static $config  = array();
+	public static $config     = array();
 
-	public static $store   = NULL;
+	public static $store      = NULL;
 
-	public static $error   = NULL;
+	public static $error      = NULL;
 
-	public static $logger  = NULL;
+	public static $logger     = NULL;
+    
+    public static $idProvider = NULL;
 
 	// --------------------------------------------------------------------
 
@@ -34,9 +36,9 @@ class Hybrid_Auth
 	* refer to the Configuration section:
 	* http://hybridauth.sourceforge.net/userguide/Configuration.html
 	*/
-	function __construct( $config )
+	function __construct( $config, $idProvider = NULL )
 	{ 
-		Hybrid_Auth::initialize( $config ); 
+		Hybrid_Auth::initialize( $config, $idProvider ); 
 	}
 
 	// --------------------------------------------------------------------
@@ -44,7 +46,7 @@ class Hybrid_Auth
 	/**
 	* Try to initialize Hybrid_Auth with given $config hash or file
 	*/
-	public static function initialize( $config )
+	public static function initialize( $config, $idProvider = NULL )
 	{
 		if( ! is_array( $config ) && ! file_exists( $config ) ){
 			throw new Exception( "Hybriauth config does not exist on the given path.", 1 );
@@ -69,8 +71,18 @@ class Hybrid_Auth
 		# load hybridauth required files, a autoload is on the way...
 		require_once $config["path_base"] . "Error.php";
 		require_once $config["path_base"] . "Logger.php";
+        
+        /**
+         * SQLITE OR SESSION
+         * If provider name tumblr then use storage sqlite in session
+         * --------------------------------------------------------------------------------------------------------------------
+         */              
+        $storage = ( strtolower( trim( $idProvider ) ) == 'tumblr' ) ? "Storage_Sqlite" : "Storage";
 
-		require_once $config["path_base"] . "Storage.php";
+		require_once $config["path_base"] . $storage.".php";
+        /**
+         * --------------------------------------------------------------------------------------------------------------------
+         */
 
 		require_once $config["path_base"] . "Provider_Adapter.php";
 
@@ -94,7 +106,17 @@ class Hybrid_Auth
 		Hybrid_Auth::$error = new Hybrid_Error();
 
 		// start session storage mng
-		Hybrid_Auth::$store = new Hybrid_Storage();
+        /**
+         * SQLITE OR SESSION
+         * If provider name tumblr then use storage sqlite in session
+         * --------------------------------------------------------------------------------------------------------------------
+         */        
+        $storage = ( strtolower( trim( $idProvider == 'tumblr' ) ) ) ? "Hybrid_Storage_Sqlite" : "Hybrid_Storage";
+        
+		Hybrid_Auth::$store = new $storage();
+        /**
+         * --------------------------------------------------------------------------------------------------------------------
+         */		
 
 		Hybrid_Logger::info( "Enter Hybrid_Auth::initialize()"); 
 		Hybrid_Logger::info( "Hybrid_Auth::initialize(). PHP version: " . PHP_VERSION ); 
@@ -212,6 +234,7 @@ class Hybrid_Auth
 	*/
 	public static function authenticate( $providerId, $params = NULL )
 	{
+        
 		Hybrid_Logger::info( "Enter Hybrid_Auth::authenticate( $providerId )" );
 
 		// if user not connected to $providerId then try setup a new adapter and start the login process for this provider
@@ -408,4 +431,14 @@ class Hybrid_Auth
 		// return current url
 		return $url;
 	}
+    
+    /**
+     * SQLITE
+     * Delete config for tumblr
+     * @param type $providerId
+     */
+    public function clearAllSqlite( $providerId )
+    {
+        Hybrid_Auth::storage()->clearAll( $providerId );
+    }
 }

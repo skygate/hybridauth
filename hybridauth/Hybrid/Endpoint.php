@@ -11,18 +11,20 @@
  * Hybrid_Endpoint class provides a simple way to handle the OpenID and OAuth endpoint.
  */
 class Hybrid_Endpoint {
-	public static $request = NULL;
-	public static $initDone = FALSE;
+	public static $request    = NULL;
+	public static $initDone   = FALSE;
+    public static $idProvider = NULL;
 
 	/**
 	* Process the current request
 	*
 	* $request - The current request parameters. Leave as NULL to default to use $_REQUEST.
 	*/
-	public static function process( $request = NULL )
+	public static function process( $request = NULL, $idProvider = NULL )
 	{
 		// Setup request variable
-		Hybrid_Endpoint::$request = $request;
+		Hybrid_Endpoint::$request    = $request;
+        Hybrid_Endpoint::$idProvider = $idProvider;
 
 		if ( is_null(Hybrid_Endpoint::$request) ){
 			// Fix a strange behavior when some provider call back ha endpoint
@@ -194,9 +196,18 @@ class Hybrid_Endpoint {
 
 			# Init Hybrid_Auth
 			try {
-				require_once realpath( dirname( __FILE__ ) )  . "/Storage.php";
-				
-				$storage = new Hybrid_Storage(); 
+                /**
+                 * If provider name tumblr then use storage sqlite in session
+                 * ------------------------------------------------------------------------------------------------------------------------
+                 */
+                $setStorage = ( strtolower( trim( Hybrid_Endpoint::$idProvider ) ) == 'tumblr') ? "Storage_Sqlite" : "Storage";
+                
+				require_once realpath( dirname( __FILE__ ) )  . "/{$setStorage}.php";
+				$instStorage = "Hybrid_{$setStorage}";
+				$storage = new $instStorage(); 
+                /**
+                 * ------------------------------------------------------------------------------------------------------------------------
+                 */
 
 				// Check if Hybrid_Auth session already exist
 				if ( ! $storage->config( "CONFIG" ) ) { 
@@ -204,7 +215,7 @@ class Hybrid_Endpoint {
 					die( "You cannot access this page directly." );
 				}
 
-				Hybrid_Auth::initialize( $storage->config( "CONFIG" ) ); 
+				Hybrid_Auth::initialize( $storage->config( "CONFIG" ), Hybrid_Endpoint::$idProvider ); 
 			}
 			catch ( Exception $e ){
 				Hybrid_Logger::error( "Endpoint: Error while trying to init Hybrid_Auth" ); 

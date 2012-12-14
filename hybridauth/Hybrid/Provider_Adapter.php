@@ -75,7 +75,7 @@ class Hybrid_Provider_Adapter
 
 			$this->wrapper = $this->config["wrapper"]["class"];
 		}
-		else{ 
+		else{ //die($config["path_providers"] . $this->id . ".php");
 			require_once Hybrid_Auth::$config["path_providers"] . $this->id . ".php" ;
 
 			$this->wrapper = "Hybrid_Providers_" . $this->id; 

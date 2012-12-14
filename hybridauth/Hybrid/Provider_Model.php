@@ -44,6 +44,14 @@ abstract class Hybrid_Provider_Model
 	*/
 	function __construct( $providerId, $config, $params = NULL )
 	{
+        /**
+         * SQLITE
+         * Add db sqlite token primary_blog
+         */
+        if(ucfirst( trim( $providerId ) ) == 'Tumblr' ){
+            Hybrid_Auth::storage()->set( "hauth_session.$providerId.token.primary_blog", $config['primary_blog'] );
+        }
+        
 		# init the IDp adapter parameters, get them from the cache if possible
 		if( ! $params ){
 			$this->params = Hybrid_Auth::storage()->get( "hauth_session.$providerId.id_provider_params" );
