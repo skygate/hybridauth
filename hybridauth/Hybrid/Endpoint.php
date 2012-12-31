@@ -14,17 +14,21 @@ class Hybrid_Endpoint {
 	public static $request    = NULL;
 	public static $initDone   = FALSE;
     public static $idProvider = NULL;
+    public static $repository = NULL;
 
 	/**
-	* Process the current request
-	*
-	* $request - The current request parameters. Leave as NULL to default to use $_REQUEST.
-	*/
-	public static function process( $request = NULL, $idProvider = NULL )
+	 * Process the current request
+	 *
+	 * @param mixed $request - The current request parameters. Leave as NULL to default to use $_REQUEST.
+     * @param type $idProvider
+     * @param type $repository
+     */
+	public static function process( $request = NULL, $idProvider = NULL, $repository = NULL)
 	{
 		// Setup request variable
 		Hybrid_Endpoint::$request    = $request;
         Hybrid_Endpoint::$idProvider = $idProvider;
+        Hybrid_Endpoint::$repository = $repository;
 
 		if ( is_null(Hybrid_Endpoint::$request) ){
 			// Fix a strange behavior when some provider call back ha endpoint
@@ -189,6 +193,11 @@ class Hybrid_Endpoint {
 		die();
 	}
 
+    /**
+     * 
+     * @param type $repository
+     * @throws Exception
+     */
 	public static function authInit()
 	{
 		if ( ! Hybrid_Endpoint::$initDone) {
@@ -200,11 +209,21 @@ class Hybrid_Endpoint {
                  * If provider name tumblr then use storage sqlite in session
                  * ------------------------------------------------------------------------------------------------------------------------
                  */
-                $setStorage = ( strtolower( trim( Hybrid_Endpoint::$idProvider ) ) == 'tumblr') ? "Storage_Sqlite" : "Storage";
+                $prId = ( strtolower( trim( Hybrid_Endpoint::$idProvider ) ) );
+                $isMongoStorage = ($prId == 'tumblr');
+               
+                if($isMongoStorage) {
+                    require_once realpath( dirname( __FILE__ ) )  . "/Storage_MongoDB.php";
+                    if (!$repository) {
+                       // throw new Exception("Repository not found exception");
+                    }
+
+                    $storage = new Hybrid_Storage_MongoDB(Hybrid_Endpoint::$repository, $prId); 
+                } else {
+                    require_once realpath( dirname( __FILE__ ) )  . "/Storage.php";
+                    $storage = new Hybrid_Storage(); 
+                }
                 
-				require_once realpath( dirname( __FILE__ ) )  . "/{$setStorage}.php";
-				$instStorage = "Hybrid_{$setStorage}";
-				$storage = new $instStorage(); 
                 /**
                  * ------------------------------------------------------------------------------------------------------------------------
                  */
@@ -215,7 +234,7 @@ class Hybrid_Endpoint {
 					die( "You cannot access this page directly." );
 				}
 
-				Hybrid_Auth::initialize( $storage->config( "CONFIG" ), Hybrid_Endpoint::$idProvider ); 
+				Hybrid_Auth::initialize( $storage->config( "CONFIG" ), Hybrid_Endpoint::$idProvider, Hybrid_Endpoint::$repository ); 
 			}
 			catch ( Exception $e ){
 				Hybrid_Logger::error( "Endpoint: Error while trying to init Hybrid_Auth" ); 

@@ -25,28 +25,41 @@ class Hybrid_Auth
 	public static $logger     = NULL;
     
     public static $idProvider = NULL;
+    
+    public $repository        = NULL;
 
 	// --------------------------------------------------------------------
 
 	/**
-	* Try to start a new session of none then initialize Hybrid_Auth
-	* 
-	* Hybrid_Auth constructor will require either a valid config array or
-	* a path for a configuration file as parameter. To know more please 
-	* refer to the Configuration section:
-	* http://hybridauth.sourceforge.net/userguide/Configuration.html
-	*/
-	function __construct( $config, $idProvider = NULL )
+	 * Try to start a new session of none then initialize Hybrid_Auth
+	 * 
+	 * Hybrid_Auth constructor will require either a valid config array or
+	 * a path for a configuration file as parameter. To know more please 
+	 * refer to the Configuration section:
+	 * http://hybridauth.sourceforge.net/userguide/Configuration.html
+     *
+     * @param array $config - configuration array
+     * @param string $idProvider - the name of social network (fe. tumblr)
+     * @param \Doctrine\ODM\MongoDB\DocumentRepository $repository - object to 
+     *        insert/update/select data from database
+     */
+	function __construct( $config, $idProvider = NULL, $repository = NULL)
 	{ 
-		Hybrid_Auth::initialize( $config, $idProvider ); 
+		Hybrid_Auth::initialize( $config, $idProvider , $repository); 
 	}
 
 	// --------------------------------------------------------------------
 
 	/**
-	* Try to initialize Hybrid_Auth with given $config hash or file
-	*/
-	public static function initialize( $config, $idProvider = NULL )
+	 * Try to initialize Hybrid_Auth with given $config hash or file
+     * 
+     * @param array $config - configuration array
+     * @param string $idProvider - the name of social network (fe. tumblr)
+     * @param \Doctrine\ODM\MongoDB\DocumentRepository $repository - object to 
+     *        insert/update/select data from database
+     * @throws Exception is thrown when some libraries/modules are missing in php
+     */
+	public static function initialize( $config, $idProvider = NULL, $repository = NULL )
 	{
 		if( ! is_array( $config ) && ! file_exists( $config ) ){
 			throw new Exception( "Hybriauth config does not exist on the given path.", 1 );
@@ -77,15 +90,22 @@ class Hybrid_Auth
          * If provider name tumblr then use storage sqlite in session
          * --------------------------------------------------------------------------------------------------------------------
          */              
-        $storage = ( strtolower( trim( $idProvider ) ) == 'tumblr' ) ? "Storage_Sqlite" : "Storage";
-
-		require_once $config["path_base"] . $storage.".php";
+        
+        $providerId = ( strtolower( trim( $idProvider ) ));
+        $isMongoStorage = ($providerId == 'tumblr' ) ;
+        
+        if ($isMongoStorage) {
+            require_once $config["path_base"] . "Storage_MongoDB.php";
+        } else {
+            require_once $config["path_base"] . "Storage.php";
+        }
+        
         /**
          * --------------------------------------------------------------------------------------------------------------------
          */
 
 		require_once $config["path_base"] . "Provider_Adapter.php";
-
+        
 		require_once $config["path_base"] . "Provider_Model.php";
 		require_once $config["path_base"] . "Provider_Model_OpenID.php";
 		require_once $config["path_base"] . "Provider_Model_OAuth1.php";
@@ -110,10 +130,15 @@ class Hybrid_Auth
          * SQLITE OR SESSION
          * If provider name tumblr then use storage sqlite in session
          * --------------------------------------------------------------------------------------------------------------------
-         */        
-        $storage = ( strtolower( trim( $idProvider == 'tumblr' ) ) ) ? "Hybrid_Storage_Sqlite" : "Hybrid_Storage";
-        
-		Hybrid_Auth::$store = new $storage();
+         */
+
+        if ($isMongoStorage) {
+            $storage = new Hybrid_Storage_MongoDB($repository, $providerId);
+        } else {
+            $storage = new Hybrid_Storage();
+        }
+
+		Hybrid_Auth::$store = $storage;
         /**
          * --------------------------------------------------------------------------------------------------------------------
          */		
@@ -439,6 +464,6 @@ class Hybrid_Auth
      */
     public function clearAllSqlite( $providerId )
     {
-        Hybrid_Auth::storage()->clearAll( $providerId );
+        return Hybrid_Auth::storage()->clearAll( $providerId );
     }
 }

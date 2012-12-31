@@ -13,7 +13,8 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
     private $stateTextPost  = 'private';
     private $statePhotoPost = 'private';
     private $type           = array('text'=>'text', 'photo'=>'photo', 'quote'=>'quote', 'link'=>'link', 'chat'=>'chat', 'audio'=>'audio', 'video'=>'video');
-   	/**
+    
+   /**
 	* IDp wrappers initializer 
 	*/
 	function initialize()
@@ -29,12 +30,11 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
 		$this->api->curl_auth_header  = false;
 	}
 
-
    /**
 	* load the user profile from the IDp api client
 	*/
 	function getUserProfile()
-	{
+	{        
         $response = $this->api->get( 'http://www.tumblr.com/api/authenticate' );       
         
         $profile = $this->api->get( 'user/info' );
@@ -81,53 +81,36 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
      */
     public function createPostText( $data )
     {
-        /**
-         * Error message is photo empty, because is required 
-         */
-        if( $data['body'] == '' ) {
-            $message = "Error. Body is empty.";
-            
-            return array( 
-                'message' => $message, 
-                'color'   => '2' 
-            );
-            
-        } else {
+        try {
             /**
-             * Method create post photo
-             */
-            $parameters = array( 
-                'state'      => $this->stateTextPost,
-                'type'       => $this->type['text'],
-                'source_url' => $data['source_url'],
-                'title'      => $data['title'],
-                'body'       => $data['body'],
-                ); 
+            * Parameters post text
+            */
+           $parameters = array( 
+               'state'      => $this->stateTextPost,
+               'type'       => $this->type['text'],
+               'source_url' => $data['source_url'],
+               'title'      => $data['title'],
+               'body'       => $data['body'],
+               'slug'       => $data['slug'],
+               'date'       => $data['date'],
+               ); 
 
-            /**
-             * Send post
-             */
-            $response  = $this->api->post( "blog/" . $this->token( "primary_blog" ) . '/post', $parameters );  
+           /**
+            * Send post
+            */
+           $response  = $this->api->post( "blog/" . $this->token( "primary_blog" ) . '/post', $parameters );
+           
+           /**
+            * Error is post not send 
+            */
+           if ( $response->meta->status != 201 ) {
+               throw new Exception( "Send post failed!" );
+           }
 
-            /**
-             * Error message is post not send 
-             */
-            if ( $response->meta->status != 201 ) {
-                $message =  "Update user status failed! {$this->providerId} returned an error. " . $this->errorMessageByStatus( $response->meta->status );
-                
-                return array(
-                    'message' => $message, 
-                    'color'   => '2'
-                );
-                
-            } else {
-                $message = "Element id --" . $data['id'] . "-- is export";
-                
-                return array(
-                    'message' => $message, 
-                    'color'   => '3'
-                );
-            }      
+           return $response;
+           
+        } catch (Exception $exc) {
+            throw new Exception( "Send post failed!" );
         }
     }
     
@@ -135,58 +118,36 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
      * Method create post photo
      */
     function createPostPhoto( $data )
-    {   
-        $response = $this->api->get( 'http://www.tumblr.com/api/authenticate' );       
-        
-        $profile = $this->api->get( 'user/info' );
-        
-        /**
-         * Error message is photo empty, because is required 
-         */
-        if( $data['photo_src'] == '' ) {
-            $message = "Error. Photo is empty.";
-            
-            return array(
-                'message' => $message, 
-                'color'   => '2'
-            );
-            
-        } else {
+    {        
+        try {
             /**
-             * Parameters post photo
-             */
-            $parameters = array( 
-            'state'      => $this->statePhotoPost,
-            'type'       => $this->type['photo'],
-            'source_url' => $data['resource_url'],
-            'data'       => array( file_get_contents( $data['photo_src'] ) ),
-            'caption'    => $data['caption'],
-            ); 
-        
-            /**
-             * Send post
-             */
-            $response  = $this->api->post( "blog/" . $this->token( "primary_blog" ) . '/post', $parameters );         
+            * Parameters post photo
+            */
+           $parameters = array( 
+               'state'      => $this->statePhotoPost,
+               'type'       => $this->type['photo'],
+               'source_url' => $data['resource_url'],
+               'data'       => array( file_get_contents( $data['photo_src'] ) ),
+               'caption'    => $data['caption'],
+               'date'       => $data['date']    
+           ); 
 
-            /**
-             * Error message is post not send 
+           /**
+            * Send post
+            */
+           $response  = $this->api->post( "blog/" . $this->token( "primary_blog" ) . '/post', $parameters );
+           
+           /**
+             * Error is post not send 
              */
             if ( $response->meta->status != 201 ) {
-                $message = "Update user status failed! {$this->providerId} returned an error. " . $this->errorMessageByStatus( $response->meta->status );
-                
-                return array(
-                    'message' => $message, 
-                    'color'   => '2'
-                );
-                
-            } else {
-                $message = "Element id --" . $data['id'] . "-- is export";
-                
-                return array(
-                    'message' => $message, 
-                    'color'   => '3'
-                );
+                throw new Exception( "Send post failed!" );
             }
-        }
+
+           return $response;
+           
+        } catch (Exception $exc) {
+            throw new Exception( "Send post failed!" );
+        }        
     }    
 }
