@@ -10,8 +10,8 @@
 */
 class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
 {
-    private $stateTextPost  = 'private';
-    private $statePhotoPost = 'private';
+    private $stateTextPost  = 'public';
+    private $statePhotoPost = 'public';
     private $type           = array('text'=>'text', 'photo'=>'photo', 'quote'=>'quote', 'link'=>'link', 'chat'=>'chat', 'audio'=>'audio', 'video'=>'video');
     
    /**
@@ -93,6 +93,7 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
                'body'       => $data['body'],
                'slug'       => $data['slug'],
                'date'       => $data['date'],
+               'tags'       => $data['tags'],
                ); 
 
            /**
@@ -129,7 +130,8 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
                'source_url' => $data['resource_url'],
                'data'       => array( file_get_contents( $data['photo_src'] ) ),
                'caption'    => $data['caption'],
-               'date'       => $data['date']    
+               'date'       => $data['date'],
+               'tags'       => $data['tags'],
            ); 
 
            /**
