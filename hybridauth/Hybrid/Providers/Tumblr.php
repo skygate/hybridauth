@@ -105,10 +105,8 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
             * Error is post not send 
             */
            if ( $response->meta->status != 201 ) {
-               throw new Exception( "Send post failed!" );
+               throw new Exception( "Send post failed! - error code " . $response->meta->status );
            }
-
-           return $response;
            
         } catch (Exception $exc) {
             throw new Exception( "Send post failed!" );
@@ -138,15 +136,13 @@ class Hybrid_Providers_Tumblr extends Hybrid_Provider_Model_OAuth1
             * Send post
             */
            $response  = $this->api->post( "blog/" . $this->token( "primary_blog" ) . '/post', $parameters );
-           
+
            /**
              * Error is post not send 
              */
             if ( $response->meta->status != 201 ) {
-                throw new Exception( "Send post failed!" );
+                throw new Exception( "Send post failed! - error code " . $response->meta->status );
             }
-
-           return $response;
            
         } catch (Exception $exc) {
             throw new Exception( "Send post failed!" );
