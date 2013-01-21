@@ -308,13 +308,12 @@ class Hybrid_Auth
 
 		if( ! $params ){ 
 			$params = ARRAY();
-			
 			Hybrid_Logger::info( "Hybrid_Auth::setup( $providerId ), no stored params found for this provider. Initialize a new one for new session" );
 		}
 
-		if( ! isset( $params["hauth_return_to"] ) ){
+		if( ! isset( $params["hauth_return_to"] ) ) {
 			$params["hauth_return_to"] = Hybrid_Auth::getCurrentUrl(); 
-		}
+		} 
 
 		Hybrid_Logger::debug( "Hybrid_Auth::setup( $providerId ). HybridAuth Callback URL set to: ", $params["hauth_return_to"] );
 
@@ -325,6 +324,17 @@ class Hybrid_Auth
 
 		return $provider;
 	} 
+    
+    /**
+     * Check if running in a console environment (CLI)
+     *
+     * @return bool
+     */
+    public static function isConsole()
+    {
+      
+        return PHP_SAPI == 'cli';
+    }
 
 	// --------------------------------------------------------------------
 
@@ -437,7 +447,7 @@ class Hybrid_Auth
 			$protocol = 'http://';
 		}
 
-		$url = $protocol . $_SERVER['SERVER_NAME'];
+		$url = $protocol . @$_SERVER['SERVER_NAME'];
 
 		// use port if non default
 		$url .= 
@@ -447,7 +457,7 @@ class Hybrid_Auth
 			: '';
 
 		if( $request_uri ){
-			$url .= $_SERVER['REQUEST_URI'];
+			$url .= @$_SERVER['REQUEST_URI'];
 		}
 		else{
 			$url .= $_SERVER['PHP_SELF'];
